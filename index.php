@@ -3,7 +3,7 @@
 Plugin Name: Smart Media Manager
 Plugin URI: https://aminarjmand.com
 Description: مدیریت هوشمند رسانه (اندازه، کیفیت و گالری تصاویر حرفه‌ای)
-Version: 1.5
+Version: 1.6
 Author: امین ارجمند
 Author URI: https://aminarjmand.com
 Text Domain: smart-media-manager
@@ -187,12 +187,23 @@ add_filter( 'use_widgets_block_editor', function( $use ) {
  * FALLBACK - جلوگیری از خطای ویرایشگر
  */
 add_filter( 'image_downsize', function( $return, $attachment_id, $size ) {
+    // اگر در ادمین هستیم، افزونه غیرفعال است، خروجی از قبل آماده است، یا سایز درخواستی full است، کاری انجام نده.
     if ( is_admin() || ! get_option( CFM_OPTION_ENABLE_FALLBACK ) || $return || $size === 'full' ) return $return;
+
+    // رفع مشکل Illegal offset type: بررسی می‌کنیم که $size حتماً یک رشته (متن) باشد.
+    // چون اگر $size یک آرایه (طول و عرض سفارشی) باشد، نمی‌توان آن را در کلید آرایه جستجو کرد.
+    if ( ! is_string( $size ) ) {
+        return $return;
+    }
+
     $meta = wp_get_attachment_metadata( $attachment_id );
-    if ( ! isset( $meta['sizes'][$size] ) ) {
+    
+    // اطمینان حاصل می‌کنیم که $meta آرایه است و سایز درخواستی درون آن وجود ندارد
+    if ( ! is_array( $meta ) || empty( $meta['sizes'] ) || ! isset( $meta['sizes'][$size] ) ) {
         $full = wp_get_attachment_image_src( $attachment_id, 'full' );
         return $full ? array( $full[0], $full[1], $full[2], false ) : $return;
     }
+    
     return $return;
 }, 10, 3);
 
